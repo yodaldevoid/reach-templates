@@ -65,6 +65,50 @@ function _getGridHighlightPositionsReach(template) {
   return positions;
 }
 
+function AbilityTemplate_fromItem(wrapped, item) {
+  const target = item.system.target ?? {};
+  if(target.type != "reach") {
+    return wrapped(item);
+  }
+
+  // Prepare template data
+  const templateData = {
+    t: "circle",
+    user: game.user.id,
+    distance: target.value,
+    direction: 0,
+    angle: CONFIG.MeasuredTemplate.defaults.angle,
+    x: 0,
+    y: 0,
+    fillColor: game.user.color,
+    flags: { dnd5e: { origin: item.uuid } }
+  };
+
+  switch(item.system.range.units) {
+  case "self":
+    const self_size = item.parent.system.traits.size
+    console.debug(`${MOD_NAME} | self size: ${self_size}`)
+    const token_size = dnd5e.config.tokenSizes[self_size] ?? 0
+    if(token_size) {
+      templateData.width = token_size * canvas.dimensions.distance
+    }
+    break;
+  // TODO: base on size of target
+  default:
+    break;
+  }
+
+  console.debug(templateData);
+
+  // Return the template constructed from the item data
+  const cls = CONFIG.MeasuredTemplate.documentClass;
+  const template = new cls(templateData, {parent: canvas.scene});
+  const object = new this(template);
+  object.item = item;
+  object.actorSheet = item.actor?.sheet || null;
+  return object;
+}
+
 Hooks.once("init", function() {
   console.log(`${MOD_NAME} | Initializing module`);
 });
@@ -84,4 +128,14 @@ Hooks.once("setup", function() {
     MeasuredTemplate_getGridHighlightPositions,
     libWrapper.MIXED,
   );
+  libWrapper.register(
+    MOD_NAME,
+    "game.dnd5e.canvas.AbilityTemplate.fromItem",
+    AbilityTemplate_fromItem,
+    libWrapper.MIXED,
+  );
+
+  // Add the reach template to the DnD5e targeting options.
+  dnd5e.config.areaTargetTypes.reach = {label: "Reach", template: "circle"}
+  dnd5e.config.targetTypes.reach = "Reach"
 });
