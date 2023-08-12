@@ -1,0 +1,31 @@
+{
+  "name": "reach-templates",
+  "title": "Reach Templates",
+  "description": "",
+  "authors": [
+    {
+      "name": "yodaldevoid"
+    }
+  ],
+  "version": "0.1.0",
+  "scripts": [],
+  "esmodules": ["src/reach-templates.mjs"],
+  "relationships": {
+    "requires": [
+      {
+        "id": "lib-wrapper",
+        "type": "module",
+        "compatibility": {
+          "verified": "1.12.10.0"
+        }
+      }
+    ]
+  },
+  "minimumCoreVersion": "10.0",
+  "compatibleCoreVersion": "10.0",
+  "compatibility": {
+    "minimum": 10.0,
+    "verified": 10.303,
+    "maximum": 10.0
+  }
+}
