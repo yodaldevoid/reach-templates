@@ -7,7 +7,9 @@
       "name": "yodaldevoid"
     }
   ],
-  "version": "0.1.0",
+  "version": "#{VERSION}#",
+  "license": "LICENSE",
+  "readme": "README.md",
   "scripts": [],
   "esmodules": ["src/reach-templates.mjs"],
   "relationships": {
@@ -27,5 +29,8 @@
     "minimum": 10.0,
     "verified": 10.303,
     "maximum": 10.0
-  }
+  },
+  "url": "#{URL}#",
+  "manifest": "#{MANIFEST}#",
+  "download": "#{DOWNLOAD}#"
 }

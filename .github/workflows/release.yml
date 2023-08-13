@@ -1,0 +1,101 @@
+# MIT License
+#
+# Copyright (c) 2020 Repository Owner
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+name: Create Module Files For GitHub Release
+
+
+env:
+  project_url: "https://github.com/${{github.repository}}"
+  latest_manifest_url: "https://github.com/${{github.repository}}/releases/latest/download/module.json"
+  release_module_url: "https://github.com/${{github.repository}}/releases/download/${{github.ref_name}}/module.zip"
+
+
+on:
+  push:
+    tags:
+      - v*
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Extract Version from Tag
+        id: get_version
+        uses: battila7/get-version-action@v2
+
+      - name: Extract Changelog Description for Version
+        id: get_changelog_desc
+        uses: buberdds/extract-changelog-action@v1
+        with:
+          version: ${{steps.get_version.outputs.version-without-v}}
+
+      # Modify "module.json" with values specific to the release.
+      # Since the values for the "version" and "url" keys aren't known ahead of
+      # time, the manifest file in the repository is updated with these values.
+      #
+      # While this does modify the manifest file in-place, the changes are not
+      # commited to the repository, and only exist in the action's filesystem.
+      - name: Modify Module Manifest with Release-Specific Values
+        id: sub_manifest_link_version
+        uses: cschleiden/replace-tokens@v1
+        with:
+          files: 'module.json'
+        env:
+          VERSION: ${{steps.get_version.outputs.version-without-v}}
+          URL: ${{ env.project_url }}
+          MANIFEST: ${{ env.latest_manifest_url }}
+          DOWNLOAD: ${{ env.release_module_url }}
+
+      - name: Create Module Archive
+        run: |
+          # Note that `zip` will only emit warnings when a file or directory
+          # doesn't exist, it will not fail.
+          zip                                    \
+            `# Options`                          \
+            --recurse-paths                      \
+            `# The name of the output file`      \
+             ./module.zip                        \
+            `# The files that will be included.` \
+            module.json                          \
+            README.md                            \
+            CHANGELOG.md                         \
+            LICENSE                              \
+            src/
+
+
+      - name: Create Release with Files
+        id: create_version_release
+        uses: ncipollo/release-action@v1
+        with:
+          allowUpdates: true
+          name: Release ${{ steps.get_version.outputs.version }}
+          draft: false
+          prerelease: ${{ steps.get_version.outputs.prerelease != '' }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          artifacts: "./module.json, ./module.zip"
+          body: ${{ steps.get_changelog_desc.outputs.content }}
